@@ -8,6 +8,7 @@ typedef enum {
     TOKEN_WHERE,
 
     TOKEN_IDENTIFIER,
+    TOKEN_NUMBER,
 
     TOKEN_STAR,
     TOKEN_COMMA,
