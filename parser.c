@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "parser.h"
+#include "executor.h"
 
 void syntaxError() {
 
@@ -100,16 +101,12 @@ void parse(Token tokens[], int tokenCount) {
         current++;
     }
 
-    printf("Parsed SELECT Statement\n");
+    executeSelect(stmt);
 
-    printf("Column : %s\n", stmt.column);
+    // if(stmt.hasWhere) {
 
-    printf("Table  : %s\n", stmt.table);
-
-    if(stmt.hasWhere) {
-
-        printf("WHERE  : %s = %s\n",
-               stmt.whereColumn,
-               stmt.whereValue);
-    }
+    //     printf("WHERE  : %s = %s\n",
+    //            stmt.whereColumn,
+    //            stmt.whereValue);
+    // }
 }
