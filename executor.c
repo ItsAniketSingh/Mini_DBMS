@@ -21,6 +21,8 @@ int getColumnIndex(char* columnName) {
     return -1;
 }
 
+
+
 void executeSelect(SelectStatement stmt) {
 
     FILE* fp = fopen("students.txt", "r");

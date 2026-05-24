@@ -21,7 +21,6 @@ int main() {
     while(1) {
 
         printf("mini_sql > ");
-
         fgets(input, sizeof(input), stdin);
 
         input[strcspn(input, "\n")] = '\0';
@@ -37,7 +36,7 @@ int main() {
 
         int tokenCount = tokenize(input, tokens);
 
-        printTokens(tokens, tokenCount);
+        // printTokens(tokens, tokenCount);
 
         parse(tokens, tokenCount);
 
