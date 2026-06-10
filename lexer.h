@@ -6,6 +6,7 @@ typedef enum {
     TOKEN_SELECT,
     TOKEN_FROM,
     TOKEN_WHERE,
+    TOKEN_INSERT,
 
     TOKEN_IDENTIFIER,
     TOKEN_NUMBER,

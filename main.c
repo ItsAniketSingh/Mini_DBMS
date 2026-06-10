@@ -36,9 +36,15 @@ int main() {
 
         int tokenCount = tokenize(input, tokens);
 
-        // printTokens(tokens, tokenCount);
+        if(tokens[0].type == TOKEN_SELECT){
+            SelectStatement stmt;
+            if(parseSelect(tokens, tokenCount, &stmt)){
+                executeSelect(stmt);
+            }
+        }else if(tokens[0].type == TOKEN_INSERT){
+            
+        }
 
-        parse(tokens, tokenCount);
 
         printf("\n");
     }

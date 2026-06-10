@@ -9,19 +9,18 @@ void syntaxError() {
     printf("Syntax Error!\n");
 }
 
-void parse(Token tokens[], int tokenCount) {
+int parseSelect(Token tokens[], int tokenCount, SelectStatement *stmt) {
 
     int current = 0;
 
-    SelectStatement stmt;
 
-    stmt.hasWhere = 0;
+    stmt->hasWhere = 0;
 
     // SELECT
     if(tokens[current].type != TOKEN_SELECT) {
 
         syntaxError();
-        return;
+        return 0;
     }
 
     current++;
@@ -30,13 +29,13 @@ void parse(Token tokens[], int tokenCount) {
     if(tokens[current].type == TOKEN_IDENTIFIER ||
        tokens[current].type == TOKEN_STAR) {
 
-        strcpy(stmt.column, tokens[current].value);
+        strcpy(stmt->column, tokens[current].value);
     }
 
     else {
 
         syntaxError();
-        return;
+        return 0;
     }
 
     current++;
@@ -45,7 +44,7 @@ void parse(Token tokens[], int tokenCount) {
     if(tokens[current].type != TOKEN_FROM) {
 
         syntaxError();
-        return;
+        return 0;
     }
 
     current++;
@@ -54,10 +53,10 @@ void parse(Token tokens[], int tokenCount) {
     if(tokens[current].type != TOKEN_IDENTIFIER) {
 
         syntaxError();
-        return;
+        return 0;
     }
 
-    strcpy(stmt.table, tokens[current].value);
+    strcpy(stmt->table, tokens[current].value);
 
     current++;
 
@@ -65,7 +64,7 @@ void parse(Token tokens[], int tokenCount) {
     if(current < tokenCount &&
        tokens[current].type == TOKEN_WHERE) {
 
-        stmt.hasWhere = 1;
+        stmt->hasWhere = 1;
 
         current++;
 
@@ -76,7 +75,7 @@ void parse(Token tokens[], int tokenCount) {
             return;
         }
 
-        strcpy(stmt.whereColumn, tokens[current].value);
+        strcpy(stmt->whereColumn, tokens[current].value);
 
         current++;
 
@@ -96,17 +95,9 @@ void parse(Token tokens[], int tokenCount) {
             return;
         }
 
-        strcpy(stmt.whereValue, tokens[current].value);
+        strcpy(stmt->whereValue, tokens[current].value);
 
         current++;
     }
 
-    executeSelect(stmt);
-
-    // if(stmt.hasWhere) {
-
-    //     printf("WHERE  : %s = %s\n",
-    //            stmt.whereColumn,
-    //            stmt.whereValue);
-    // }
 }

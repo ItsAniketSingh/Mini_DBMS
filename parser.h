@@ -15,6 +15,6 @@ typedef struct {
 
 } SelectStatement;
 
-void parse(Token tokens[], int tokenCount);
+int parseSelect(Token tokens[], int tokenCount, SelectStatement * stmt);
 
 #endif
