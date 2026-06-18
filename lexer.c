@@ -1,138 +1,158 @@
-#include <stdio.h>
-#include <string.h>
 #include <ctype.h>
+#include <string.h>
 
 #include "lexer.h"
 
-TokenType checkKeyword(char* word) {
 
-    if(strcmp(word, "SELECT") == 0) {
+TokenType checkToken(char *str)
+{
+    if (strcmp(str, "select") == 0)
         return TOKEN_SELECT;
-    }
 
-    if(strcmp(word, "FROM") == 0) {
+    if (strcmp(str, "from") == 0)
         return TOKEN_FROM;
-    }
 
-    if(strcmp(word, "WHERE") == 0) {
+    if (strcmp(str, "where") == 0)
         return TOKEN_WHERE;
-    }
 
+    if (strcmp(str, "insert") == 0)
+        return TOKEN_INSERT;
+
+    if (strcmp(str, "create") == 0)
+        return TOKEN_CREATE;
+
+    if (strcmp(str, "table") == 0)
+        return TOKEN_TABLE;
+
+    if (strcmp(str, "into") == 0)
+        return TOKEN_INTO;
+
+    if (strcmp(str, "values") == 0)
+        return TOKEN_VALUES;
+
+    if(strcmp(str, "int") == 0){
+        return TOKEN_INT;
+    }
+    if (strcmp(str,"varchar") == 0)
+    {
+        return TOKEN_VARCHAR;
+    }
+    
     return TOKEN_IDENTIFIER;
 }
 
-int tokenize(char* input, Token tokens[]) {
-
+int tokenization(char *input, Token tokens[])
+{
     int i = 0;
-    int tokenCount = 0;
+    int count = 0;
 
-    while(input[i] != '\0') {
-
-        // skip spaces
-        if(isspace(input[i])) {
+    while (input[i] != '\0')
+    {
+        if (isspace(input[i]))
+        {
             i++;
             continue;
         }
 
-        // WORDS
-        if(isalpha(input[i])) {
-
+        if (isalpha(input[i]) || input[i] == '_')
+        {
             char buffer[64];
             int j = 0;
 
-            while(isalpha(input[i])) {
-
-                buffer[j] = input[i];
-
-                j++;
+            while (isalnum(input[i]) || input[i] == '_')
+            {
+                buffer[j++] = tolower(input[i]);
                 i++;
             }
 
             buffer[j] = '\0';
 
-            Token token;
+            tokens[count].type = checkToken(buffer);
+            strcpy(tokens[count].value, buffer);
 
-            token.type = checkKeyword(buffer);
-
-            strcpy(token.value, buffer);
-
-            tokens[tokenCount++] = token;
+            count++;
+            continue;
         }
 
-        // NUMBERS
-        else if(isdigit(input[i])) {
-
+        if (isdigit(input[i]))
+        {
             char buffer[64];
             int j = 0;
 
-            while(isdigit(input[i])) {
-
-                buffer[j] = input[i];
-
-                j++;
+            while (isdigit(input[i]))
+            {
+                buffer[j++] = input[i];
                 i++;
             }
 
             buffer[j] = '\0';
 
-            Token token;
+            tokens[count].type = TOKEN_NUMBER;
+            strcpy(tokens[count].value, buffer);
 
-            token.type = TOKEN_NUMBER;
-
-            strcpy(token.value, buffer);
-
-            tokens[tokenCount++] = token;
+            count++;
+            continue;
         }
 
-        // *
-        else if(input[i] == '*') {
-
-            Token token;
-
-            token.type = TOKEN_STAR;
-
-            strcpy(token.value, "*");
-
-            tokens[tokenCount++] = token;
-
+        if (input[i] == '*')
+        {
+            tokens[count].type = TOKEN_STAR;
+            strcpy(tokens[count].value, "*");
+            count++;
             i++;
+            continue;
         }
 
-        // =
-        else if(input[i] == '=') {
-
-            Token token;
-
-            token.type = TOKEN_EQUALS;
-
-            strcpy(token.value, "=");
-
-            tokens[tokenCount++] = token;
-
+        if (input[i] == '(')
+        {
+            tokens[count].type = TOKEN_LPAREN;
+            strcpy(tokens[count].value, "(");
+            count++;
             i++;
+            continue;
         }
 
-        // ;
-        else if(input[i] == ';') {
-
-            Token token;
-
-            token.type = TOKEN_SEMICOLON;
-
-            strcpy(token.value, ";");
-
-            tokens[tokenCount++] = token;
-
+        if (input[i] == ')')
+        {
+            tokens[count].type = TOKEN_RPAREN;
+            strcpy(tokens[count].value, ")");
+            count++;
             i++;
+            continue;
         }
 
-        else {
-
-            printf("Unexpected character: %c\n", input[i]);
-
+        if (input[i] == ',')
+        {
+            tokens[count].type = TOKEN_COMMA;
+            strcpy(tokens[count].value, ",");
+            count++;
             i++;
+            continue;
         }
+        if(input[i] == '='){
+            tokens[count].type = TOKEN_EQUAL;
+            strcpy(tokens[count].value, "=");
+            count++;
+            i++;
+            continue;
+        }
+        
+        if (input[i] == ';')
+        {
+            tokens[count].type = TOKEN_SEMICOLON;
+            strcpy(tokens[count].value, ";");
+            count++;
+            i++;
+            continue;
+        }
+
+        i++;
     }
 
-    return tokenCount;
+    tokens[count].type = TOKEN_EOF;
+    strcpy(tokens[count].value, "EOF");
+    count++;
+
+    return count;
 }
+
