@@ -1,113 +1,238 @@
+
+
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 
 #include "executor.h"
 
-int getColumnIndex(char* columnName) {
+int executeCreateTable(CreateTableNode *node)
+{
 
-    if(strcmp(columnName, "id") == 0) {
+    char fileName[128];
+    FILE *check = fopen(fileName, "r");
+
+    if (check != NULL)
+    {
+        fclose(check);
+        printf("Table already exists\n");
+        return 0;
+    }
+    fclose(check);
+    FILE *fp;
+
+    snprintf(fileName, sizeof(fileName), "%s.meta", node->tableName);
+
+    fp = fopen(fileName, "w");
+
+    if (fp == NULL)
+    {
+        printf("Could not create table\n");
         return 0;
     }
 
-    if(strcmp(columnName, "name") == 0) {
-        return 1;
+    fprintf(fp, "%d\n", node->columnCount);
+    for (int i = 0; i < node->columnCount; i++)
+    {
+        fprintf(fp, "%s ", node->columns[i].columnName);
+        if (node->columns[i].type == TYPE_INT)
+        {
+            fprintf(fp, "INT\n");
+        }
+        else
+        {
+            fprintf(fp, "VARCHAR\n");
+        }
+    }
+    fclose(fp);
+
+    char dataFileName[128];
+
+    snprintf(dataFileName, sizeof(dataFileName), "%s.data", node->tableName);
+
+    FILE *df = fopen(dataFileName, "w");
+
+    if (df == NULL)
+    {
+        printf("Could not create data file\n");
+        return 0;
     }
 
-    if(strcmp(columnName, "age") == 0) {
-        return 2;
-    }
+    fclose(df);
 
-    return -1;
+    return 1;
 }
 
+int executeInsert(InsertNode *node)
+{
+    char fileName[128];
 
+    sprintf(fileName, "%s.data", node->tableName);
 
-void executeSelect(SelectStatement stmt) {
+    FILE *fp = fopen(fileName, "a");
 
-    FILE* fp = fopen("students.txt", "r");
-
-    if(fp == NULL) {
-
-        printf("Could not open table file.\n");
-        return;
+    if (fp == NULL)
+    {
+        printf("Could not open table file \n");
+        return 0;
     }
 
-    char line[256];
+    for (int i = 0; i < node->valueCount; i++)
+    {
+        fprintf(fp, "%s", node->values[i]);
+        if (i != node->valueCount - 1)
+        {
+            fprintf(fp, "|");
+        }
+    }
+    fprintf(fp, "\n");
 
-    int selectColumn = -1;
+    fclose(fp);
 
-    if(strcmp(stmt.column, "*") != 0) {
+    printf("1 row inserted\n");
+    return 1;
+}
 
-        selectColumn = getColumnIndex(stmt.column);
+int executeSelect(SelectNode *node)
+{
+    char metaFile[128];
+    char dataFile[128];
 
-        if(selectColumn == -1) {
+    sprintf(metaFile, "%s.meta", node->tableName);
+    sprintf(dataFile, "%s.data", node->tableName);
 
-            printf("Unknown column: %s\n", stmt.column);
-            fclose(fp);
-            return;
+    FILE *mf = fopen(metaFile, "r");
+
+    if (mf == NULL)
+    {
+        printf("Table does not exist\n");
+        return 0;
+    }
+
+    int columnCount;
+    fscanf(mf, "%d", &columnCount);
+
+    char metaColumns[20][64];
+    char metaType[64];
+
+    for (int i = 0; i < columnCount; i++)
+    {
+        fscanf(mf, "%s %s", metaColumns[i], metaType);
+    }
+
+    int selectedIndex[20];
+    int selectedCount = 0;
+
+
+    // Head Row
+    if (node->selectAll)
+    {
+        for (int i = 0; i < columnCount; i++)
+        {
+            selectedIndex[selectedCount++] = i;
+            printf("%-15s", metaColumns[i]);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < node->columnCount; i++)
+        {
+            int found = 0;
+
+            for (int j = 0; j < columnCount; j++)
+            {
+                if (strcmp(node->columns[i], metaColumns[j]) == 0)
+                {
+                    selectedIndex[selectedCount++] = j;
+                    printf("%-15s", metaColumns[j]);
+                    found = 1;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                printf("Column %s not found\n", node->columns[i]);
+                fclose(mf);
+                return 0;
+            }
         }
     }
 
-    int whereColumn = -1;
+    printf("\n");
 
-    if(stmt.hasWhere) {
+    for (int i = 0; i < selectedCount; i++)
+    {
+        printf("---------------");
+    }
 
-        whereColumn = getColumnIndex(stmt.whereColumn);
+    printf("\n");
 
-        if(whereColumn == -1) {
+    int whereIndex = -1;
 
-            printf("Unknown WHERE column: %s\n",
-                   stmt.whereColumn);
+    if (node->hasWhere)
+    {
+        for (int i = 0; i < columnCount; i++)
+        {
+            if (strcmp(metaColumns[i], node->whereColumn) == 0)
+            {
+                whereIndex = i;
+                break;
+            }
+        }
 
-            fclose(fp);
-            return;
+        if (whereIndex == -1)
+        {
+            printf("WHERE column not found\n");
+            fclose(mf);
+            return 0;
         }
     }
 
-    while(fgets(line, sizeof(line), fp)) {
+    fclose(mf);
 
-        line[strcspn(line, "\n")] = '\0';
+    FILE *df = fopen(dataFile, "r");
 
-        char temp[256];
+    if (df == NULL)
+    {
+        printf("Could not open data file\n");
+        return 0;
+    }
 
-        strcpy(temp, line);
+    char line[512];
 
-        char* columns[10];
+    while (fgets(line, sizeof(line), df))
+    {
+        char fields[20][64];
+        int fieldCount = 0;
 
-        int columnCount = 0;
+        char *token = strtok(line, "|\n");
 
-        char* token = strtok(temp, ",");
+        while (token != NULL)
+        {
+            strcpy(fields[fieldCount], token);
+            fieldCount++;
 
-        while(token != NULL) {
-
-            columns[columnCount++] = token;
-
-            token = strtok(NULL, ",");
+            token = strtok(NULL, "|\n");
         }
 
-        // WHERE FILTER
-        if(stmt.hasWhere) {
-
-            if(strcmp(columns[whereColumn],
-                      stmt.whereValue) != 0) {
-
+        if (node->hasWhere)
+        {
+            if (strcmp(fields[whereIndex],node->whereValue) != 0)
+            {
                 continue;
             }
         }
 
-        // SELECT *
-        if(strcmp(stmt.column, "*") == 0) {
-
-            printf("%s\n", line);
+        for (int i = 0; i < selectedCount; i++)
+        {
+            printf("%-15s",
+                   fields[selectedIndex[i]]);
         }
 
-        // SELECT specific column
-        else {
-
-            printf("%s\n", columns[selectColumn]);
-        }
+        printf("\n");
     }
 
-    fclose(fp);
+    fclose(df);
+
+    return 1;
 }
