@@ -3,50 +3,57 @@
 
 #include "lexer.h"
 #include "parser.h"
+#include "executor.h"
 
-void printTokens(Token tokens[], int count) {
+int main()
+{
+    char input[256];
+    Token tokens[100];
 
-    for(int i = 0; i < count; i++) {
+    while (1)
+    {
+        printf("MiniDB >> ");
 
-        printf("%d -> %s\n",
-               tokens[i].type,
-               tokens[i].value);
-    }
-}
-
-int main() {
-
-    char input[1024];
-
-    while(1) {
-
-        printf("mini_sql > ");
-        fgets(input, sizeof(input), stdin);
+        if (fgets(input, sizeof(input), stdin) == NULL)
+            break;
 
         input[strcspn(input, "\n")] = '\0';
 
-        if(strcmp(input, ".exit") == 0) {
-
-            printf("Bye!\n");
-
+        if (strcmp(input, "exit") == 0)
+        {
             break;
         }
+        int count = tokenization(input, tokens);
 
-        Token tokens[100];
+        // for (int i = 0; i < count; i++)
+        // {
+        //     printf("%d -> %s\n",
+        //            tokens[i].type,
+        //            tokens[i].value);
+        // }
 
-        int tokenCount = tokenize(input, tokens);
-
-        if(tokens[0].type == TOKEN_SELECT){
-            SelectStatement stmt;
-            if(parseSelect(tokens, tokenCount, &stmt)){
-                executeSelect(stmt);
+        if (tokens[0].type == TOKEN_CREATE)
+        {
+            CreateTableNode node;
+            if(parseCreateTable(tokens, count, &node)){
+                executeCreateTable(&node);
             }
-        }else if(tokens[0].type == TOKEN_INSERT){
-            
         }
-
-
-        printf("\n");
+        else if(tokens[0].type == TOKEN_INSERT){
+            InsertNode node;
+            if(parseInsert(tokens, count, &node)){
+                executeInsert(&node);
+            }
+        }
+        else if(tokens[0].type == TOKEN_SELECT){
+            SelectNode node;
+            if(parseSelect(tokens, count, &node)){
+                executeSelect(&node);
+            }
+        }else{
+            printf("Invalid Statement\n");
+        }
+        
     }
 
     return 0;
